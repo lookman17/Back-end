@@ -6,13 +6,13 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\GalleryController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\AuthController;
-
+use App\Http\Controllers\CommentController;
 
 // Gallery routes
 Route::get('content', [GalleryController::class, 'index']);
 Route::get('content/{id}', [GalleryController::class, 'show']);
 Route::post('content', [GalleryController::class, 'store']);
-Route::put('content/{id}', [GalleryController::class, 'update']);
+Route::patch('content/{id}', [GalleryController::class, 'update']); // Use PATCH for partial updates
 Route::delete('content/{id}', [GalleryController::class, 'destroy']);
 
 
@@ -44,3 +44,9 @@ Route::post('/events', [EventController::class, 'store']);
 Route::put('/events/{id}', [EventController::class, 'update']);
 Route::delete('/events/{id}', [EventController::class, 'destroy']);
 
+
+Route::get('/comments', [CommentController::class, 'index']); // Menampilkan semua komentar
+Route::get('/comments/{id}', [CommentController::class, 'show']); // Menampilkan komentar berdasarkan ID
+Route::post('/comments', [CommentController::class, 'store']); // Menambahkan komentar baru
+Route::put('/comments/{id}', [CommentController::class, 'update']); // Mengupdate komentar berdasarkan ID
+Route::delete('/comments/{id}', [CommentController::class, 'destroy']); // Menghapus komentar berdasarkan ID

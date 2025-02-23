@@ -1,9 +1,9 @@
-<?php
-
-namespace App\Http\Controllers\Api;
+<?php 
+namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Comment;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class CommentController extends Controller
@@ -11,41 +11,39 @@ class CommentController extends Controller
     // Menampilkan semua komentar
     public function index()
     {
-        $comments = Comment::all();
+        $comments = Comment::with(['user:id,name,username,role,profile_photo'])->get();
+
         return response()->json([
             'message' => 'Comments retrieved successfully',
             'data' => $comments
         ]);
     }
 
-    // Menampilkan komentar berdasarkan ID
     public function show($id)
-    {
-        $comment = Comment::find($id);
+{
+    $comments = Comment::with('user')->where('gallery_id', $id)->get();
 
-        if (!$comment) {
-            return response()->json(['message' => 'Comment not found'], 404);
-        }
+    return response()->json([
+        'message' => 'Comments retrieved successfully',
+        'data' => $comments
+    ]);
+}
 
-        return response()->json([
-            'message' => 'Comment retrieved successfully',
-            'data' => $comment
-        ]);
-    }
+
 
     // Menambahkan komentar baru
     public function store(Request $request)
     {
         $request->validate([
-            'content_id' => 'required|exists:contents,id',  // Pastikan content_id ada di tabel contents
-            'user_name' => 'required|string|max:255',
-            'message' => 'required|string',
+            'gallery_id' => 'required|exists:galleries,id',  // Pastikan gallery_id ada di tabel galleries
+            'user_id' => 'required|exists:users,id',  // Pastikan user_id ada di tabel users
+            'content' => 'required|string',
         ]);
 
         $comment = Comment::create([
-            'content_id' => $request->content_id,
-            'user_name' => $request->user_name,
-            'message' => $request->message,
+            'gallery_id' => $request->gallery_id,
+            'user_id' => $request->user_id,
+            'content' => $request->content,
         ]);
 
         return response()->json([
@@ -64,13 +62,13 @@ class CommentController extends Controller
         }
 
         $request->validate([
-            'user_name' => 'nullable|string|max:255',
-            'message' => 'nullable|string',
+            'user_id' => 'nullable|exists:users,id',  // Pastikan user_id ada di tabel users
+            'content' => 'nullable|string',
         ]);
 
         $comment->update([
-            'user_name' => $request->user_name ?? $comment->user_name,
-            'message' => $request->message ?? $comment->message,
+            'user_id' => $request->user_id ?? $comment->user_id,
+            'content' => $request->content ?? $comment->content,
         ]);
 
         return response()->json([

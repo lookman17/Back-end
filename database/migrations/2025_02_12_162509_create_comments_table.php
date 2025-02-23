@@ -12,8 +12,6 @@ return new class extends Migration {
             $table->unsignedBigInteger('user_id'); // Foreign key ke users
             $table->text('content');
             $table->timestamps();
-
-            // Definisi Foreign Key
             $table->foreign('gallery_id')->references('id')->on('galleries')->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade'); // Referensi ke users
         });

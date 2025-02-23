@@ -6,27 +6,29 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class EventController extends Controller
 {
     public function index()
-    {
-        $events = Event::orderBy('date', 'desc')->get();
-        return response()->json([
-            'message' => 'Events retrieved successfully',
-            'data' => $events
-        ]);
-    }
+{
+    $events = Event::with('user')->orderBy('date', 'desc')->get();
+    return response()->json([
+        'message' => 'Events retrieved successfully',
+        'data' => $events
+    ]);
+}
+
 
     public function show($id)
-    {
-        $event = Event::findOrFail($id);
+{
+    $event = Event::with('user')->findOrFail($id);
+    return response()->json([
+        'message' => 'Event retrieved successfully',
+        'data' => $event
+    ]);
+}
 
-        return response()->json([
-            'message' => 'Event retrieved successfully',
-            'data' => $event
-        ]);
-    }
 
     public function store(Request $request)
     {
@@ -39,10 +41,15 @@ class EventController extends Controller
             'location' => 'required|string|max:255',
             'status' => 'required|in:upcoming,completed,canceled',
             'category_id' => 'required|exists:categories,id',
-            'user_id' => 'required|exists:users,id', // Validate that user_id exists in users table
-            'host' => 'required|string|max:255', // Add validation for host
-            'image' => 'nullable|string|max:255' // Add validation for image
+            'user_id' => 'required|exists:users,id',
+            'host' => 'required|string|max:255',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048'
         ]);
+
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('images', 'public');
+        }
 
         $event = Event::create([
             'name' => $request->name,
@@ -55,7 +62,7 @@ class EventController extends Controller
             'status' => $request->status,
             'category_id' => $request->category_id,
             'host' => $request->host,
-            'image' => $request->image // Save image
+            'image' => $imagePath
         ]);
 
         return response()->json([
@@ -78,12 +85,22 @@ class EventController extends Controller
             'status' => 'nullable|in:upcoming,completed,canceled',
             'category_id' => 'nullable|exists:categories,id',
             'host' => 'nullable|string|max:255',
-            'image' => 'nullable|string|max:255' // Add validation for image
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048'
         ]);
 
-        $event->update($request->only([
-            'name', 'description', 'date', 'start_time', 'end_time', 'location', 'status', 'category_id', 'host', 'image' // Save image
-        ]));
+        $data = $request->only([
+            'name', 'description', 'date', 'start_time', 'end_time', 'location', 'status', 'category_id', 'host'
+        ]);
+
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($event->image) {
+                Storage::delete('public/' . $event->image);
+            }
+            $data['image'] = $request->file('image')->store('images', 'public');
+        }
+
+        $event->update($data);
 
         return response()->json([
             'message' => 'Event updated successfully',
@@ -95,9 +112,13 @@ class EventController extends Controller
     {
         $event = Event::findOrFail($id);
 
-        // Cek apakah user yang login adalah pemilik event
         if ($event->user_id !== Auth::id()) {
             return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Delete image if exists
+        if ($event->image) {
+            Storage::delete('public/' . $event->image);
         }
 
         $event->delete();
