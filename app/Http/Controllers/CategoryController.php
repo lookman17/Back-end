@@ -20,20 +20,24 @@ class CategoryController extends Controller
 
     // Menampilkan kategori berdasarkan ID
     public function show($id)
-    {
-        $category = Category::find($id);
+{
+    $category = Category::find($id);
 
-        if (!$category) {
-            return response()->json(['message' => 'Category not found'], 404);
-        }
-
+    if (!$category) {
         return response()->json([
-            'message' => 'Category retrieved successfully',
-            'data' => $category
-        ]);
+            'message' => 'Category not found',
+            'data' => null
+        ], 404);
     }
 
-    // Menambahkan kategori baru
+    return response()->json([
+        'message' => 'Category retrieved successfully',
+        'data' => $category
+    ], 200);
+}
+
+
+    
     public function store(Request $request)
     {
         $request->validate([
@@ -50,7 +54,7 @@ class CategoryController extends Controller
         ], 201);
     }
 
-    // Mengupdate kategori berdasarkan ID
+    
     public function update(Request $request, $id)
     {
         $category = Category::find($id);
@@ -73,7 +77,7 @@ class CategoryController extends Controller
         ]);
     }
 
-    // Menghapus kategori berdasarkan ID
+  
     public function destroy($id)
     {
         $category = Category::find($id);

@@ -22,7 +22,8 @@ class User extends Authenticatable
         'name',
         'username',
         'password',
-        'profile_photo', // Menambahkan profile_photo ke fillable
+        'profile_photo',
+        'role',
     ];
 
     /**

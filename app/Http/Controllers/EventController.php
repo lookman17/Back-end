@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class EventController extends Controller
@@ -20,14 +21,15 @@ class EventController extends Controller
 }
 
 
-    public function show($id)
+public function show($id)
 {
-    $event = Event::with('user')->findOrFail($id);
+    $event = Event::with(['user', 'category'])->findOrFail($id);
     return response()->json([
         'message' => 'Event retrieved successfully',
         'data' => $event
     ]);
 }
+
 
 
     public function store(Request $request)
@@ -71,49 +73,47 @@ class EventController extends Controller
         ], 201);
     }
 
+
     public function update(Request $request, $id)
     {
-        $event = Event::findOrFail($id);
-
-        $request->validate([
-            'name' => 'nullable|string|max:255',
+        Log::info('Request Data:', $request->all());
+    
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'date' => 'nullable|date',
-            'start_time' => 'nullable|date_format:H:i',
-            'end_time' => 'nullable|date_format:H:i|after:start_time',
-            'location' => 'nullable|string|max:255',
-            'status' => 'nullable|in:upcoming,completed,canceled',
-            'category_id' => 'nullable|exists:categories,id',
+            'date' => 'required|date',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i|after:start_time',
+            'location' => 'required|string|max:255',
+            'status' => 'required|in:upcoming,completed,canceled',
+            'category_id' => 'required|exists:categories,id',
             'host' => 'nullable|string|max:255',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048'
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
-
-        $data = $request->only([
-            'name', 'description', 'date', 'start_time', 'end_time', 'location', 'status', 'category_id', 'host'
-        ]);
-
-        if ($request->hasFile('image')) {
-            // Delete old image if exists
-            if ($event->image) {
-                Storage::delete('public/' . $event->image);
-            }
-            $data['image'] = $request->file('image')->store('images', 'public');
+    
+        $event = Event::find($id);
+        if (!$event) {
+            return response()->json(['message' => 'Event not found'], 404);
         }
-
-        $event->update($data);
-
-        return response()->json([
-            'message' => 'Event updated successfully',
-            'data' => $event
-        ]);
+    
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('images', 'public');
+            $validatedData['image'] = $imagePath;
+        }
+    
+        $event->update($validatedData);
+        
+        return response()->json(['message' => 'Event updated successfully', 'data' => $event]);
     }
+    
+
 
     public function destroy($id)
     {
         $event = Event::findOrFail($id);
 
-        if ($event->user_id !== Auth::id()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        if (!$event) {
+            return response()->json(['message' => 'NotFound'], 404);
         }
 
         // Delete image if exists

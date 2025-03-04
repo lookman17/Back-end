@@ -28,7 +28,9 @@ class AuthController extends Controller
             "username" => $request->username,
             "password" => bcrypt($request->password),
             "profile_photo" => $photoPath,
+            "role" => $request->role ?? "member", // Jika `role` tidak dikirim, default "member"
         ]);
+        
 
         $token = $user->createToken("sanctum_token")->plainTextToken;
 
@@ -62,77 +64,52 @@ class AuthController extends Controller
         ], 200);
     }
 
-    public function updateProfilePhoto(Request $request)
-    {
-        $user = auth("sanctum")->user();
-    
-        if (!$user) {
-            return response()->json([
-                "message" => "Unauthorized.",
-            ], 401);
-        }
-    
-        $request->validate([
-            "profile_photo" => "required|image|mimes:jpeg,png,jpg,gif|max:2048",
-        ]);
-    
-        if ($user->profile_photo) {
-            Storage::disk('public')->delete($user->profile_photo);
-        }
-    
-        $photoPath = $request->file('profile_photo')->store('profile_photos', 'public');
-    
-        User::where('id', $user->id)->update(["profile_photo" => $photoPath]);
-    
-        return response()->json([
-            "message" => "Profile photo updated successfully.",
-            "profile_photo_url" => asset("storage/" . $photoPath)
-        ], 200);
-    }
-
     public function updateUser(Request $request)
     {
-        $user = auth("sanctum")->user();
+        $user = auth('sanctum')->user();
     
         if (!$user) {
-            return response()->json(["message" => "Unauthorized."], 401);
+            return response()->json(["message" => "Unauthorized."], 401)->header('Access-Control-Allow-Origin', 'http://localhost:5173');
         }
     
         $request->validate([
-            "name" => "nullable|max:255",
-            "username" => "nullable|max:64|alpha_dash|unique:users,username," . $user->id,
-            "password" => "nullable|min:6",
+            "name" => "sometimes|required|max:255",
+            "username" => "sometimes|required|max:64|alpha_dash|unique:users,username," . $user->id,
+            "password" => "sometimes|required",
             "profile_photo" => "nullable|image|mimes:jpeg,png,jpg,gif|max:2048",
         ]);
     
-        $dataToUpdate = [];
-    
-        if ($request->has("name")) {
-            $dataToUpdate["name"] = $request->name;
-        }
-        if ($request->has("username")) {
-            $dataToUpdate["username"] = $request->username;
-        }
-        if ($request->has("password")) {
-            $dataToUpdate["password"] = bcrypt($request->password);
-        }
-    
-        if ($request->hasFile("profile_photo")) {
+        if ($request->hasFile('profile_photo')) {
+            // Hapus foto lama jika ada
             if ($user->profile_photo) {
                 Storage::disk("public")->delete($user->profile_photo);
             }
     
-            $photoPath = $request->file("profile_photo")->store("profile_photos", "public");
-            $dataToUpdate["profile_photo"] = $photoPath;
+            // Simpan foto profil baru
+            $photoPath = $request->file('profile_photo')->store('profile_photos', 'public');
+            $user->profile_photo = $photoPath;
         }
     
-        User::where("id", $user->id)->update($dataToUpdate);
+        if ($request->name) {
+            $user->name = $request->name;
+        }
+        if ($request->username) {
+            $user->username = $request->username;
+        }
+        if ($request->password) {
+            $user->password = bcrypt($request->password);
+        }
+    
+        $user->save();
     
         return response()->json([
             "message" => "User updated successfully.",
-            "profile_photo_url" => isset($photoPath) ? asset("storage/" . $photoPath) : asset("storage/" . $user->profile_photo),
-        ], 200);
+            "profile_photo_url" => $user->profile_photo ? asset("storage/" . $user->profile_photo) : null
+        ], 200)->header('Access-Control-Allow-Origin', 'http://localhost:5173');
     }
+    
+    
+
 
     public function deleteUser()
     {
@@ -165,9 +142,11 @@ class AuthController extends Controller
             "id" => $user->id,
             "name" => $user->name,
             "username" => $user->username,
-            "profile_photo_url" => $user->profile_photo ? asset("storage/" . $user->profile_photo) : null
+            "profile_photo_url" => $user->profile_photo ? asset("storage/" . $user->profile_photo) : null,
+            "role" => $user->role   
         ]
     ], 200);
 }
+
 
 }
