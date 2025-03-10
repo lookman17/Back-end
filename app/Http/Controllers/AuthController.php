@@ -28,7 +28,7 @@ class AuthController extends Controller
             "username" => $request->username,
             "password" => bcrypt($request->password),
             "profile_photo" => $photoPath,
-            "role" => $request->role ?? "member", // Jika `role` tidak dikirim, default "member"
+            "role" => $request->role ?? "member",
         ]);
         
 
@@ -80,12 +80,10 @@ class AuthController extends Controller
         ]);
     
         if ($request->hasFile('profile_photo')) {
-            // Hapus foto lama jika ada
             if ($user->profile_photo) {
                 Storage::disk("public")->delete($user->profile_photo);
             }
     
-            // Simpan foto profil baru
             $photoPath = $request->file('profile_photo')->store('profile_photos', 'public');
             $user->profile_photo = $photoPath;
         }
@@ -150,3 +148,4 @@ class AuthController extends Controller
 
 
 }
+    
