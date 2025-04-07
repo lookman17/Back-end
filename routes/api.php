@@ -7,12 +7,13 @@ use App\Http\Controllers\Api\GalleryController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\ProfilController;
 
 
 Route::get('content', [GalleryController::class, 'index']);
 Route::get('content/{id}', [GalleryController::class, 'show']);
 Route::post('content', [GalleryController::class, 'store']);
-Route::patch('content/{id}', [GalleryController::class, 'update']); // Use PATCH for partial updates
+Route::patch('content/{id}', [GalleryController::class, 'update']);
 Route::delete('content/{id}', [GalleryController::class, 'destroy']);
 
 
@@ -45,3 +46,9 @@ Route::get('/comments/{id}', [CommentController::class, 'show']);
 Route::post('/comments', [CommentController::class, 'store']);
 Route::put('/comments/{id}', [CommentController::class, 'update']);
 Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
+
+Route::get('/profil', [ProfilController::class, 'index']);
+Route::get('/profil/{id}', [ProfilController::class, 'show']);
+Route::post('/profil', [ProfilController::class, 'store']);
+Route::patch('/profil/{id}', [ProfilController::class, 'update']);
+Route::delete('/profil/{id}', [ProfilController::class, 'destroy']);

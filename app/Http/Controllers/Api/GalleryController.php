@@ -41,17 +41,14 @@ class GalleryController extends Controller
             'user_id' => 'required|exists:users,id',
         ]);
 
-        // Handle upload gambar jika ada
         $image = null;
         if ($request->hasFile('image')) {
-            // Save the image to storage
             $image = $request->file('image')->store('images', 'public');
         }
 
-        // Buat gallery baru
         $gallery = Gallery::create([
             'title' => $request->title,
-            'image' => $image,  // Save the correct image path here
+            'image' => $image, 
             'description' => $request->description,
             'user_id' => $request->user_id,
         ]);
@@ -59,17 +56,13 @@ class GalleryController extends Controller
         return response()->json($gallery, 201);
     }
 
-    // Mengupdate data gallery berdasarkan id
     public function update(Request $request, $id)
     {
-        // Cari gallery berdasarkan ID
         $gallery = Gallery::find($id);
 
         if (!$gallery) {
             return response()->json(['message' => 'Gallery not found'], 404);
         }
-
-        // Validasi request
         $request->validate([
             'title' => 'nullable|string|max:255',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
@@ -77,18 +70,15 @@ class GalleryController extends Controller
             'user_id' => 'nullable|exists:users,id',
         ]);
 
-        // Handle upload gambar baru jika ada
         if ($request->hasFile('image')) {
-            // Hapus gambar lama jika ada
             if ($gallery->image) {
                 Storage::delete('public/' . $gallery->image);
             }
             $image = $request->file('image')->store('images', 'public');
         } else {
-            $image = $gallery->image; // Gunakan gambar lama jika tidak ada yang baru
+            $image = $gallery->image;
         }
 
-        // Update gallery
         $gallery->update([
             'title' => $request->title ?? $gallery->title,
             'image' => $image,
@@ -99,22 +89,18 @@ class GalleryController extends Controller
         return response()->json($gallery);
     }
 
-    // Menghapus gallery berdasarkan id
     public function destroy($id)
     {
-        // Cari gallery berdasarkan ID
         $gallery = Gallery::find($id);
 
         if (!$gallery) {
             return response()->json(['message' => 'Gallery not found'], 404);
         }
 
-        // Hapus gambar jika ada
         if ($gallery->image) {
             Storage::delete('public/' . $gallery->image);
         }
 
-        // Hapus gallery
         $gallery->delete();
 
         return response()->json(['message' => 'Gallery deleted successfully']);
